@@ -1,5 +1,7 @@
 from flask import Flask, request
 from bbio import *
+import modules 
+import inspect
 
 import atexit
 atexit.register(bbio.bbio_cleanup)
@@ -88,6 +90,10 @@ def gpio(bank, pin):
 		#nice way to send json objects
 		pass
 		
+all_routes = inspect.getmembers(modules, inspect.isfunction)
 
-if __name__ == "__main__":
+for i in all_routes:
+	app.add_url_rule("/custom/"+ i[1].__doc__, i[0], i[1])
+
+if __name__ == "__main__":	
 	app.run("0.0.0.0")

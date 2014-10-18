@@ -1,5 +1,8 @@
 from flask import Flask, request
+
 from bbio import *
+from Servo import *
+
 import modules 
 import inspect
 
@@ -15,6 +18,8 @@ def index():
 
 
 #TODO : replace all the "0" in 404 errors with a better error response
+#TODO : replace stuff that could go wrong in a try-catch block
+#	such as writing some value to a pin, or converting string to integer.
 
 
 @app.route("/gpio/<int:bank>/<int:pin>", methods = ['GET','POST'])
@@ -95,7 +100,7 @@ def gpio(bank, pin):
 		pass
 		
 
-@app.route("/pwm/<module>", methods = ['GET'])
+@app.route("/pwm/<module>")
 def pwm(module):
 	'''
 	The function to handle PWM requests. as of now pwm to work with default configuration.
@@ -114,7 +119,7 @@ def pwm(module):
 	if (module not in ['1A','1B','2A','2B']) or (not value):
 		#error in url
 		return "0", 404
-
+	value = int(value)
 	module = "PWM" + module
 	print "writing value :", value, "to module :", module
 	analogWrite(module, max(value, 255))
@@ -142,11 +147,59 @@ def adc(channel):
 	else :
 		return str(analogRead(channel))
 	
+#PWM module to servo obj mapping
+servos = {
+	'PWM1A' : Servo(),
+	'PWM1B' : Servo(),
+	'PWM2A' : Servo(),
+	'PWM2B' : Servo()
+}
+
+@app.route("/servo/<module>")
+def servo(module):
+	'''
+	function to control servos. each servo is attached to a PWM module
+
+	GET /servo/PWM1A?config=enable	=> enables this module
+	GET /servo/PWM1A?angle=50 	=> moves servo to 50 deg
+	GET /servo/PWM1A?config=disable	=> disables this module
+	'''
+	if module not in servos:
+		return "0", 404
+
+	config = request.args.get("enable", None)
+	
+	#the request is configuration req.
+	if config:
+
+		#attach the servo to module
+		if config == 'enable':
+			servos[module].attach(module)
+			return "1", 200
+
+		#detach the servo from module
+		elif config == 'disable':
+			servos[module].detach()
+			return "1", 200
+
+		else :
+			return "unrecognized value for config", 404
+
+	#not config, rather a write to servo angle
+	angle = request.args.get("angle", None)
+
+	if servos[module].pwm_pin and angle:
+		servos[module].write(int(angle))
+		return "1", 200
+	else:
+		return "0", 404
+	
 
 all_routes = inspect.getmembers(modules, inspect.isfunction)
 
 for i in all_routes:
 	app.add_url_rule("/custom/"+ i[1].__doc__, i[0], i[1])
+
 
 if __name__ == "__main__":	
 	app.run("0.0.0.0")

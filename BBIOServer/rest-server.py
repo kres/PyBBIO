@@ -90,6 +90,36 @@ def gpio(bank, pin):
 		#nice way to send json objects
 		pass
 		
+
+@app.route("/pwm/<module>", methods = ['GET'])
+def pwm(module):
+	'''
+	The function to handle PWM requests. as of now pwm to work with default configuration.
+	i.e. freq = 10KHz and resolution = 8 bit
+
+	pin to pwm mapping :-
+	P8.13 - PWM2B
+	P8.19 - PWM2A
+	P9.14 - PWM1A
+	P9.16 - PWM1B
+
+	GET /pwm/1A?value=10
+	'''
+	value = request.args.get("value", None)
+
+	if (module not in ['1A','1B','2A','2B']) or (not value):
+		#error in url
+		return "0", 404
+
+	module = "PWM" + module
+	print "writing value :", value, "to module :", module
+	analogWrite(module, max(value, 255))
+	return '1'
+
+
+	
+	
+
 all_routes = inspect.getmembers(modules, inspect.isfunction)
 
 for i in all_routes:
@@ -97,3 +127,17 @@ for i in all_routes:
 
 if __name__ == "__main__":	
 	app.run("0.0.0.0")
+
+
+
+
+
+
+
+
+
+
+
+
+
+

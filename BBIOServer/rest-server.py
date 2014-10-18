@@ -13,6 +13,10 @@ app = Flask(__name__)
 def index():
 	return "Welcome to BBIO Server"
 
+
+#TODO : replace all the "0" in 404 errors with a better error response
+
+
 @app.route("/gpio/<int:bank>/<int:pin>", methods = ['GET','POST'])
 def gpio(bank, pin):
 	'''
@@ -116,8 +120,27 @@ def pwm(module):
 	analogWrite(module, max(value, 255))
 	return '1'
 
+@app.route("/adc/<channel>")
+def adc(channel):
+	'''
+	function to handle ADC read requests. 
+	Input can be from 0 - 1.8V, o/p of 12 bit resolution
 
+	P9.33 - AIN4
+	P9.35 - AIN6
+	P9.36 - AIN5
+	P9.37 - AIN2
+	P9.38 - AIN3
+	P9.39 - AIN0
+
+	GET /adc/AIN0 => returns the analog input at channel 0
+	'''
+	if channel not in ['AIN'+str(ch) for ch in range(7)]:
+		#url error
+		return "0", 404
 	
+	else :
+		return str(analogRead(channel))
 	
 
 all_routes = inspect.getmembers(modules, inspect.isfunction)
@@ -127,17 +150,5 @@ for i in all_routes:
 
 if __name__ == "__main__":	
 	app.run("0.0.0.0")
-
-
-
-
-
-
-
-
-
-
-
-
 
 
